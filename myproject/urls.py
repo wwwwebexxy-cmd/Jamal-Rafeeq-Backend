@@ -5,6 +5,8 @@ from django.conf import settings
 
 urlpatterns = [
 
+    path("api/", include("myapp.urls")),
+
     path( "nested_admin/", include( "nested_admin.urls" ) ),
 
     path("",include("myapp.urls")),

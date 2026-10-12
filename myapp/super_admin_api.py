@@ -134,6 +134,8 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "category",
             "subcategory",
             "brand",
+            "vehicle",
+            "manufacturer",
             "offer",
             "name",
             "description",

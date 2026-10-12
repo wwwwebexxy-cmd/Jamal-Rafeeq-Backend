@@ -15,6 +15,6 @@ target group.  The load balancer must overwrite `X-Forwarded-Proto` with
 Set `STOREFRONT_ORIGINS` to every exact HTTPS browser origin allowed to send
 credentialed requests. This must include the deployed dashboard origin
 (`https://eehook-frondent-web.vercel.app`) as well as any custom storefront
-domains. For the same-origin Vercel `/backend` proxy, keep
+domains. For a same-origin storefront `/api` proxy, keep
 `JWT_COOKIE_SAMESITE=Lax`; only use `None` when the browser calls a genuinely
 cross-site API origin directly.

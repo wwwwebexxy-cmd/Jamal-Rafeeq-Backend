@@ -185,6 +185,16 @@ class Product(models.Model):
         blank=True,
         related_name="products",
     )
+    vehicle = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Compatible vehicle or vehicle family, for example Toyota Corolla.",
+    )
+    manufacturer = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Product manufacturer or supplier brand.",
+    )
     offer = models.ForeignKey( Offer, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField( max_length=200 )
     description = models.TextField()

@@ -503,6 +503,8 @@ def get_products(request):
     category = request.GET.get("category")
     subcategory = request.GET.get("subcategory")
     brand = request.GET.get("brand") or request.GET.get("brand_id")
+    vehicle = request.GET.get("vehicle")
+    manufacturer = request.GET.get("manufacturer")
     sort = request.GET.get("sort")
 
     # IDs are parsed as integers before they reach the ORM; ordering is a
@@ -535,6 +537,12 @@ def get_products(request):
             products = products.filter(brand_id=int(brand), brand__is_active=True)
         else:
             products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
+
+    if vehicle:
+        products = products.filter(vehicle__icontains=str(vehicle).strip())
+
+    if manufacturer:
+        products = products.filter(manufacturer__icontains=str(manufacturer).strip())
 
     products = _order_public_products(products, sort).distinct()
     return _paginate_public_products(request, products)
@@ -1013,6 +1021,25 @@ def homepage_brands(request):
             context={"request": request},
         ).data
     )
+
+
+@api_view(["GET"])
+def catalog_filter_options(request):
+    """Return only filter values represented by active public products."""
+    products = Product.objects.filter(is_active=True)
+    vehicles = list(
+        products.exclude(vehicle="")
+        .order_by("vehicle")
+        .values_list("vehicle", flat=True)
+        .distinct()
+    )
+    manufacturers = list(
+        products.exclude(manufacturer="")
+        .order_by("manufacturer")
+        .values_list("manufacturer", flat=True)
+        .distinct()
+    )
+    return Response({"vehicles": vehicles, "manufacturers": manufacturers})
 
 
 @api_view(["GET"])
@@ -2210,6 +2237,10 @@ def search_products(request):
             "new_arrival"
         )
 
+        brand = request.GET.get("brand") or request.GET.get("brand_id")
+        vehicle = request.GET.get("vehicle")
+        manufacturer = request.GET.get("manufacturer")
+
         sort = request.GET.get(
             "sort"
         )
@@ -2269,6 +2300,21 @@ def search_products(request):
             products = products.filter(
                 subcategory_id=subcategory
             )
+
+        if brand:
+            brand = str(brand).strip()
+            if brand.isdigit():
+                if int(brand) < 1:
+                    return Response({"error": "Invalid brand"}, status=400)
+                products = products.filter(brand_id=int(brand), brand__is_active=True)
+            else:
+                products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
+
+        if vehicle:
+            products = products.filter(vehicle__icontains=str(vehicle).strip())
+
+        if manufacturer:
+            products = products.filter(manufacturer__icontains=str(manufacturer).strip())
 
         if offer == "true":
 

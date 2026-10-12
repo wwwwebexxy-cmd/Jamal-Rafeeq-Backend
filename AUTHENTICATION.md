@@ -36,7 +36,7 @@ Set the public client ID at build time:
 
 ```dotenv
 VITE_GOOGLE_CLIENT_ID=<same Google Web application client ID>
-VITE_API_BASE_URL=/backend
+VITE_API_BASE_URL=/api
 ```
 
 Only the client ID belongs in Vite. Client secrets and SMTP credentials must

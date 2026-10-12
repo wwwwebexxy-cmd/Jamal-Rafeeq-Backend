@@ -21,6 +21,9 @@ urlpatterns = [
     path("new-arrivals/",views.new_arrivals),
     path("homepage/", views.homepage, name="homepage"),
     path("brands/", views.homepage_brands, name="brands"),
+    path("catalog-filter-options/", views.catalog_filter_options, name="catalog-filter-options"),
+    path("promo-banners/", views.get_promo_banners, name="promo-banners-public"),
+    path("hero-side-banner/", views.get_hero_side_banner, name="hero-side-banner-public"),
     path("recently-viewed/", views.recently_viewed, name="recently-viewed"),
     
     path("subcategories/",views.get_subcategories),
