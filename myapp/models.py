@@ -833,6 +833,25 @@ class HeroSideBanner(models.Model):
     def __str__(self):
         return f"Hero Side Banner {self.id}"
 
+
+class HomepageLink(models.Model):
+    """An editable quick link shown directly below the homepage hero."""
+
+    title = models.CharField(max_length=120)
+    description = models.CharField(max_length=240, blank=True)
+    image = models.ImageField(upload_to="homepage_links/", blank=True, null=True)
+    url = models.CharField(max_length=500, help_text="Use an internal path such as /find-products or a full URL.")
+    display_order = models.PositiveIntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("display_order", "id")
+
+    def __str__(self):
+        return self.title
+
 class Coupon(models.Model):
 
     APPLICABILITY_PRODUCT = "PRODUCT"

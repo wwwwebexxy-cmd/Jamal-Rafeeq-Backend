@@ -502,6 +502,7 @@ def get_products(request):
 
     category = request.GET.get("category")
     subcategory = request.GET.get("subcategory")
+    search = (request.GET.get("search") or request.GET.get("product") or "").strip()
     brand = request.GET.get("brand") or request.GET.get("brand_id")
     vehicle = request.GET.get("vehicle")
     manufacturer = request.GET.get("manufacturer")
@@ -516,8 +517,21 @@ def get_products(request):
             raise ValueError
     except (TypeError, ValueError):
         return Response({"error": "Invalid category or subcategory"}, status=400)
+    if len(search) > 100:
+        return Response({"error": "Search query is too long"}, status=400)
     if sort not in (None, "", "price_low", "price_high", "new"):
         return Response({"error": "Invalid sort value"}, status=400)
+
+    if search:
+        products = products.filter(
+            Q(name__icontains=search)
+            | Q(description__icontains=search)
+            | Q(category__name__icontains=search)
+            | Q(subcategory__name__icontains=search)
+            | Q(brand__name__icontains=search)
+            | Q(vehicle__icontains=search)
+            | Q(manufacturer__icontains=search)
+        )
 
     if category:
         products = products.filter(
@@ -988,6 +1002,11 @@ def homepage(request):
             "limits": {"products_per_section": HOMEPAGE_PRODUCT_LIMIT},
             "hero_banners": HeroBannerSerializer(
                 HeroBanner.objects.filter(is_active=True).order_by("display_order"),
+                many=True,
+                context={"request": request},
+            ).data,
+            "homepage_links": HomepageLinkSerializer(
+                HomepageLink.objects.filter(is_active=True).order_by("display_order", "id"),
                 many=True,
                 context={"request": request},
             ).data,

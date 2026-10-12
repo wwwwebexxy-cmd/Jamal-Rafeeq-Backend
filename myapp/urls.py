@@ -135,6 +135,7 @@ from .super_admin_api import (
     AdminCouponViewSet,
     AdminHeroBannerViewSet,
     AdminHeroSideBannerViewSet,
+    AdminHomepageLinkViewSet,
     AdminOfferViewSet,
     AdminOrderItemViewSet,
     AdminOrderViewSet,
@@ -180,6 +181,7 @@ router.register(r'admin/manage/hero-banners', AdminHeroBannerViewSet, basename='
 router.register(r'admin/manage/trust-benefits', AdminTrustBenefitViewSet, basename='admin-manage-trust-benefit')
 router.register(r'admin/manage/promo-banners', AdminPromoBannerViewSet, basename='admin-manage-promo-banner')
 router.register(r'admin/manage/hero-side-banners', AdminHeroSideBannerViewSet, basename='admin-manage-hero-side-banner')
+router.register(r'admin/manage/homepage-links', AdminHomepageLinkViewSet, basename='admin-manage-homepage-link')
 router.register(r'admin/manage/coupons', AdminCouponViewSet, basename='admin-manage-coupon')
 router.register(r'admin/manage/welcome-bonuses', views.WelcomeBonusViewSet, basename='admin-manage-welcome-bonus')
 router.register(r'admin/manage/coupon-usages', AdminCouponUsageViewSet, basename='admin-manage-coupon-usage')

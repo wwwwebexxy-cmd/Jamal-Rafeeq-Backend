@@ -28,6 +28,7 @@ from .models import (
     Color,
     HeroBanner,
     HeroSideBanner,
+    HomepageLink,
     Offer,
     Order,
     OrderItem,
@@ -783,6 +784,21 @@ class AdminHeroSideBannerViewSet(AdminModelViewSet):
         return HeroSideBannerAdminSerializer
 
 
+class AdminHomepageLinkViewSet(AdminModelViewSet):
+    queryset = HomepageLink.objects.all().order_by("display_order", "id")
+    search_fields = ("title", "description", "url")
+    ordering_fields = ("display_order", "created_at", "updated_at", "title")
+
+    def get_serializer_class(self):
+        class HomepageLinkAdminSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = HomepageLink
+                fields = "__all__"
+                read_only_fields = ("id", "created_at", "updated_at")
+
+        return HomepageLinkAdminSerializer
+
+
 class AdminCouponViewSet(AdminModelViewSet):
     queryset = Coupon.objects.select_related("category").prefetch_related("products").all().order_by("-created_at")
     search_fields = ("code", "products__name", "category__name")
@@ -858,6 +874,7 @@ ADMIN_RESOURCES = (
     ("trust-benefits", TrustBenefit, "admin/manage/trust-benefits/"),
     ("promo-banners", PromoBanner, "admin/manage/promo-banners/"),
     ("hero-side-banners", HeroSideBanner, "admin/manage/hero-side-banners/"),
+    ("homepage-links", HomepageLink, "admin/manage/homepage-links/"),
     ("coupons", Coupon, "admin/manage/coupons/"),
     ("welcome-bonuses", WelcomeBonus, "admin/manage/welcome-bonuses/"),
     ("coupon-usages", CouponUsage, "admin/manage/coupon-usages/"),
