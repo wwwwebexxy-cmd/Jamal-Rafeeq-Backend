@@ -136,6 +136,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "subcategory",
             "brand",
             "vehicle",
+            "vehicle_year",
             "manufacturer",
             "offer",
             "name",
@@ -499,32 +500,83 @@ class AdminColorViewSet(AdminModelViewSet):
 
 class AdminUnitTypeViewSet(AdminModelViewSet):
     queryset = UnitType.objects.all().order_by("name")
-    search_fields = ("name",)
+    search_fields = ("name", "description")
+    ordering_fields = ("name", "id")
+    ordering = ("name",)
 
     def get_serializer_class(self):
         class UnitTypeAdminSerializer(serializers.ModelSerializer):
             class Meta:
                 model = UnitType
-                fields = "__all__"
+                fields = ("id", "name", "description")
                 read_only_fields = ("id",)
 
+            def validate_name(self, value):
+                value = value.strip()
+                queryset = UnitType.objects.filter(name__iexact=value)
+                if self.instance:
+                    queryset = queryset.exclude(pk=self.instance.pk)
+                if queryset.exists():
+                    raise serializers.ValidationError("A Unit Type with this name already exists.")
+                return value
+
         return UnitTypeAdminSerializer
+
+    def perform_destroy(self, instance):
+        if instance.units.exists() or ProductVariantUnit.objects.filter(unit_type=instance).exists():
+            raise serializers.ValidationError({"detail": "This Unit Type is in use and cannot be deleted."})
+        super().perform_destroy(instance)
 
 
 class AdminUnitViewSet(AdminModelViewSet):
     queryset = Unit.objects.select_related("unit_type").all().order_by("name")
-    search_fields = ("name", "unit_type__name")
+    search_fields = ("name", "symbol", "description", "unit_type__name")
+    ordering_fields = ("name", "symbol", "unit_type__name", "id")
+    ordering = ("name",)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        unit_type = self.request.query_params.get("unit_type")
+        if unit_type:
+            queryset = queryset.filter(unit_type_id=unit_type)
+        return queryset
 
     def get_serializer_class(self):
         class UnitAdminSerializer(serializers.ModelSerializer):
+            unit_type = serializers.PrimaryKeyRelatedField(
+                queryset=UnitType.objects.all(),
+                required=True,
+                allow_null=False,
+            )
+            name = serializers.CharField(max_length=20, required=True, allow_blank=False)
+            symbol = serializers.CharField(max_length=20, required=True, allow_blank=False)
+
             class Meta:
                 model = Unit
                 # A Unit is only a reusable measurement/label. Inventory
                 # belongs to ProductVariant or ProductVariantUnit, never Unit.
-                fields = ("id", "unit_type", "name")
+                fields = ("id", "unit_type", "name", "symbol", "description")
                 read_only_fields = ("id",)
 
             def validate(self, attrs):
+                unit_type = attrs.get("unit_type", getattr(self.instance, "unit_type", None))
+                name = attrs.get("name", getattr(self.instance, "name", ""))
+                symbol = attrs.get("symbol", getattr(self.instance, "symbol", ""))
+                if not unit_type:
+                    raise serializers.ValidationError({"unit_type": "A Unit must belong to a Unit Type."})
+                name = name.strip()
+                symbol = symbol.strip()
+                if not name:
+                    raise serializers.ValidationError({"name": "Unit name is required."})
+                if not symbol:
+                    raise serializers.ValidationError({"symbol": "Unit symbol is required."})
+                queryset = Unit.objects.filter(unit_type=unit_type)
+                if self.instance:
+                    queryset = queryset.exclude(pk=self.instance.pk)
+                if queryset.filter(name__iexact=name).exists():
+                    raise serializers.ValidationError({"name": "A Unit with this name already exists for the selected Unit Type."})
+                if queryset.filter(symbol__iexact=symbol).exists():
+                    raise serializers.ValidationError({"symbol": "A Unit with this symbol already exists for the selected Unit Type."})
                 forbidden = {
                     field: "Unit does not contain inventory or display-order data."
                     for field in ("stock", "order")
@@ -532,9 +584,17 @@ class AdminUnitViewSet(AdminModelViewSet):
                 }
                 if forbidden:
                     raise serializers.ValidationError(forbidden)
+                attrs["unit_type"] = unit_type
+                attrs["name"] = name
+                attrs["symbol"] = symbol
                 return attrs
 
         return UnitAdminSerializer
+
+    def perform_destroy(self, instance):
+        if ProductVariantUnit.objects.filter(unit=instance).exists():
+            raise serializers.ValidationError({"detail": "This Unit is in use and cannot be deleted."})
+        super().perform_destroy(instance)
 
 
 class AdminRegionViewSet(AdminModelViewSet):

@@ -505,6 +505,7 @@ def get_products(request):
     search = (request.GET.get("search") or request.GET.get("product") or "").strip()
     brand = request.GET.get("brand") or request.GET.get("brand_id")
     vehicle = request.GET.get("vehicle")
+    vehicle_year = request.GET.get("vehicle_year") or request.GET.get("year")
     manufacturer = request.GET.get("manufacturer")
     sort = request.GET.get("sort")
 
@@ -521,6 +522,12 @@ def get_products(request):
         return Response({"error": "Search query is too long"}, status=400)
     if sort not in (None, "", "price_low", "price_high", "new"):
         return Response({"error": "Invalid sort value"}, status=400)
+    try:
+        vehicle_year = int(vehicle_year) if vehicle_year else None
+        if vehicle_year is not None and not 1900 <= vehicle_year <= 2100:
+            raise ValueError
+    except (TypeError, ValueError):
+        return Response({"error": "Invalid vehicle year"}, status=400)
 
     if search:
         products = products.filter(
@@ -553,7 +560,13 @@ def get_products(request):
             products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
 
     if vehicle:
-        products = products.filter(vehicle__icontains=str(vehicle).strip())
+        products = products.filter(
+            vehicle__icontains=str(vehicle).strip(),
+            vehicle_year__isnull=False,
+        )
+
+    if vehicle_year:
+        products = products.filter(vehicle_year=vehicle_year)
 
     if manufacturer:
         products = products.filter(manufacturer__icontains=str(manufacturer).strip())
@@ -957,15 +970,19 @@ def _just_for_you_products(request):
     return selected[:HOMEPAGE_PRODUCT_LIMIT]
 
 
-def _homepage_brands():
+def _catalog_brands():
     product_filter = Q(products__is_active=True)
     return (
         Brand.objects
         .filter(is_active=True)
         .annotate(product_count=Count("products", filter=product_filter, distinct=True))
         .filter(product_count__gt=0)
-        .order_by("-product_count", "name")[:HOMEPAGE_PRODUCT_LIMIT]
+        .order_by("-product_count", "name")
     )
+
+
+def _homepage_brands():
+    return _catalog_brands()[:HOMEPAGE_PRODUCT_LIMIT]
 
 
 def _homepage_trust_benefits():
@@ -1035,7 +1052,7 @@ def homepage(request):
 def homepage_brands(request):
     return Response(
         HomepageBrandSerializer(
-            _homepage_brands(),
+            _catalog_brands(),
             many=True,
             context={"request": request},
         ).data
@@ -1047,9 +1064,16 @@ def catalog_filter_options(request):
     """Return only filter values represented by active public products."""
     products = Product.objects.filter(is_active=True)
     vehicles = list(
-        products.exclude(vehicle="")
+        products.filter(vehicle_year__isnull=False).exclude(vehicle="")
         .order_by("vehicle")
         .values_list("vehicle", flat=True)
+        .distinct()
+    )
+    vehicle_years = list(
+        products
+        .exclude(vehicle_year__isnull=True)
+        .order_by("vehicle_year")
+        .values_list("vehicle_year", flat=True)
         .distinct()
     )
     manufacturers = list(
@@ -1058,7 +1082,7 @@ def catalog_filter_options(request):
         .values_list("manufacturer", flat=True)
         .distinct()
     )
-    return Response({"vehicles": vehicles, "manufacturers": manufacturers})
+    return Response({"vehicles": vehicles, "vehicle_years": vehicle_years, "manufacturers": manufacturers})
 
 
 @api_view(["GET"])
@@ -2258,6 +2282,7 @@ def search_products(request):
 
         brand = request.GET.get("brand") or request.GET.get("brand_id")
         vehicle = request.GET.get("vehicle")
+        vehicle_year = request.GET.get("vehicle_year") or request.GET.get("year")
         manufacturer = request.GET.get("manufacturer")
 
         sort = request.GET.get(
@@ -2268,6 +2293,12 @@ def search_products(request):
             return Response({"error": "Search is too long"}, status=400)
         if sort not in (None, "", "price_low", "price_high", "new"):
             return Response({"error": "Invalid sort value"}, status=400)
+        try:
+            vehicle_year = int(vehicle_year) if vehicle_year else None
+            if vehicle_year is not None and not 1900 <= vehicle_year <= 2100:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid vehicle year"}, status=400)
         try:
             category = int(category) if category else None
             subcategory = int(subcategory) if subcategory else None
@@ -2330,7 +2361,13 @@ def search_products(request):
                 products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
 
         if vehicle:
-            products = products.filter(vehicle__icontains=str(vehicle).strip())
+            products = products.filter(
+                vehicle__icontains=str(vehicle).strip(),
+                vehicle_year__isnull=False,
+            )
+
+        if vehicle_year:
+            products = products.filter(vehicle_year=vehicle_year)
 
         if manufacturer:
             products = products.filter(manufacturer__icontains=str(manufacturer).strip())

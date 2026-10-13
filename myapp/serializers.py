@@ -199,6 +199,7 @@ class UnitSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "symbol",
             "unit_type"
         ]
 
@@ -1206,6 +1207,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "subcategory",
             "brand",
             "vehicle",
+            "vehicle_year",
             "manufacturer",
             "offer",
             "variants",
@@ -1330,6 +1332,7 @@ class HomepageProductSerializer(serializers.ModelSerializer):
             "subcategory",
             "brand",
             "vehicle",
+            "vehicle_year",
             "manufacturer",
             "product_image",
             "starting_price",

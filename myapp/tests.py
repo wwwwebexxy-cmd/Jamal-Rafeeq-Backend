@@ -1799,9 +1799,12 @@ class HomepageDiscoveryTests(TestCase):
             "current_viewers_count",
             response.data["trending_now"][0],
         )
-        self.assertEqual(response.data["shop_by_brand"][0]["slug"], "homepage-brand")
+        homepage_brands = {
+            item["slug"]: item for item in response.data["shop_by_brand"]
+        }
+        self.assertIn("homepage-brand", homepage_brands)
         self.assertEqual(
-            response.data["shop_by_brand"][0]["product_count"],
+            homepage_brands["homepage-brand"]["product_count"],
             2,
         )
         self.assertEqual(response.data["recently_viewed"][0]["id"], trending.id)
@@ -1820,6 +1823,36 @@ class HomepageDiscoveryTests(TestCase):
         self.assertEqual(
             {item["id"] for item in shop_response.data["results"]},
             {trending.id, related.id},
+        )
+
+        search_response = self.client.get(
+            "/search-products/",
+            {"brand": self.brand.slug},
+        )
+        self.assertEqual(search_response.status_code, 200)
+        self.assertEqual(
+            {item["id"] for item in search_response.data["results"]},
+            {trending.id, related.id},
+        )
+
+        trending.vehicle_year = 2099
+        trending.save(update_fields=["vehicle_year"])
+        related.vehicle_year = 2020
+        related.save(update_fields=["vehicle_year"])
+        year_response = self.client.get("/products/", {"vehicle_year": 2099})
+        self.assertEqual(year_response.status_code, 200)
+        self.assertEqual(
+            {item["id"] for item in year_response.data["results"]},
+            {trending.id},
+        )
+        year_search_response = self.client.get(
+            "/search-products/",
+            {"search": "Homepage", "vehicle_year": 2099},
+        )
+        self.assertEqual(year_search_response.status_code, 200)
+        self.assertEqual(
+            {item["id"] for item in year_search_response.data["results"]},
+            {trending.id},
         )
 
     def test_recently_viewed_is_empty_until_a_real_view_exists(self):

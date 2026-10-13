@@ -129,14 +129,17 @@ class Color(models.Model):
 class UnitType(models.Model):
 
     name = models.CharField(max_length=50, unique=True, help_text="e.g. Weight (kg), Clothing Unit (S/M/L), Memory (GB)")
+    description = models.TextField(blank=True, default="")
 
     def __str__(self):
         return self.name
 
 class Unit(models.Model):
 
-    unit_type = models.ForeignKey(UnitType, on_delete=models.CASCADE, null=True, blank=True, related_name="units")
+    unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, null=True, blank=True, related_name="units")
     name = models.CharField(max_length=20)
+    symbol = models.CharField(max_length=20, blank=True, default="")
+    description = models.TextField(blank=True, default="")
 
     class Meta:
         constraints = [
@@ -176,8 +179,8 @@ class Product(models.Model):
         (RELATED_PRODUCT_MODE_AUTOMATIC, "Automatic"),
     )
 
-    category = models.ForeignKey(Category,on_delete=models.CASCADE)
-    subcategory = models.ForeignKey( SubCategory,on_delete=models.CASCADE)
+    category = models.ForeignKey(Category,on_delete=models.SET_NULL, null=True, blank=True)
+    subcategory = models.ForeignKey(SubCategory,on_delete=models.SET_NULL, null=True, blank=True)
     brand = models.ForeignKey(
         Brand,
         on_delete=models.SET_NULL,
@@ -189,6 +192,12 @@ class Product(models.Model):
         max_length=160,
         blank=True,
         help_text="Compatible vehicle or vehicle family, for example Toyota Corolla.",
+    )
+    vehicle_year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+        help_text="Vehicle model year, for example 2018.",
     )
     manufacturer = models.CharField(
         max_length=160,
@@ -365,8 +374,8 @@ class ProductVariant(models.Model):
 class ProductVariantUnit(models.Model):
 
     variant = models.ForeignKey(ProductVariant,on_delete=models.CASCADE, related_name="sizes" )
-    unit_type = models.ForeignKey(UnitType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Unit (e.g. GB/KG)")
-    unit = models.ForeignKey( Unit,  on_delete=models.CASCADE, null=True, blank=True, verbose_name="Quantity (e.g. 128, 1)")
+    unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, null=True, blank=True, verbose_name="Unit (e.g. GB/KG)")
+    unit = models.ForeignKey( Unit,  on_delete=models.PROTECT, null=True, blank=True, verbose_name="Quantity (e.g. 128, 1)")
     sku = models.CharField(max_length=100, unique=True, null=True, blank=True)
     price = models.DecimalField( max_digits=10,decimal_places=2)
     stock = models.PositiveIntegerField( default=0)
