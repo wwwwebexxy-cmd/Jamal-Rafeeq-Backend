@@ -33,6 +33,7 @@ from .models import (
     Order,
     OrderItem,
     Product,
+    ProductFitment,
     ProductImage,
     ProductRelatedProduct,
     ProductVariant,
@@ -50,7 +51,7 @@ from .models import (
 )
 from .permissions import IsSuperAdmin
 from .catalog_pricing import get_product_price_values
-from .serializers import CouponSerializer
+from .serializers import CouponSerializer, ProductFitmentSerializer
 
 
 class SuperAdminPagination(PageNumberPagination):
@@ -127,6 +128,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
         max_length=4,
     )
     manual_related_products = serializers.SerializerMethodField(read_only=True)
+    fitments = ProductFitmentSerializer(many=True, required=False)
 
     class Meta:
         model = Product
@@ -138,6 +140,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "vehicle",
             "vehicle_year",
             "manufacturer",
+            "fitments",
             "offer",
             "name",
             "description",
@@ -222,21 +225,34 @@ class AdminProductSerializer(serializers.ModelSerializer):
             for link in links
         ]
 
+    @staticmethod
+    def _sync_fitments(product, fitments):
+        ProductFitment.objects.filter(product=product).delete()
+        ProductFitment.objects.bulk_create(
+            [ProductFitment(product=product, **fitment) for fitment in fitments]
+        )
+
     def create(self, validated_data):
         related_ids = validated_data.pop("related_product_ids", None)
+        fitments = validated_data.pop("fitments", None)
         instance = Product(**validated_data)
         instance.full_clean()
         instance.save()
+        if fitments is not None:
+            self._sync_fitments(instance, fitments)
         if instance.related_product_mode == Product.RELATED_PRODUCT_MODE_MANUAL and related_ids:
             self._sync_manual_related_products(instance, related_ids)
         return instance
 
     def update(self, instance, validated_data):
         related_ids = validated_data.pop("related_product_ids", None)
+        fitments = validated_data.pop("fitments", None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.full_clean()
         instance.save()
+        if fitments is not None:
+            self._sync_fitments(instance, fitments)
         if instance.related_product_mode != Product.RELATED_PRODUCT_MODE_MANUAL:
             ProductRelatedProduct.objects.filter(product=instance).delete()
         elif related_ids is not None:
@@ -615,7 +631,8 @@ class AdminProductViewSet(AdminModelViewSet):
     queryset = Product.objects.select_related(
         "category", "subcategory", "brand", "offer"
     ).prefetch_related(
-        "related_product_links__related_product"
+        "related_product_links__related_product",
+        "fitments",
     ).all()
     serializer_class = AdminProductSerializer
     # Product identifiers live on the product's variants in the current

@@ -118,6 +118,7 @@ def _order_public_products(products, sort=None):
 
 def _paginate_public_products(request, products):
     paginator = PublicProductPagination()
+    products = products.prefetch_related("fitments")
     page = paginator.paginate_queryset(products, request)
     serializer = ProductSerializer(page, many=True, context={"request": request})
     return paginator.get_paginated_response(serializer.data)
@@ -537,6 +538,8 @@ def get_products(request):
             | Q(subcategory__name__icontains=search)
             | Q(brand__name__icontains=search)
             | Q(vehicle__icontains=search)
+            | Q(fitments__vehicle_make__icontains=search)
+            | Q(fitments__vehicle_model__icontains=search)
             | Q(manufacturer__icontains=search)
         )
 
@@ -560,13 +563,27 @@ def get_products(request):
             products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
 
     if vehicle:
+        vehicle_query = str(vehicle).strip()
+        vehicle_parts = vehicle_query.split(maxsplit=1)
+        fitment_vehicle_filter = (
+            Q(fitments__vehicle_make__icontains=vehicle_query)
+            | Q(fitments__vehicle_model__icontains=vehicle_query)
+        )
+        if len(vehicle_parts) == 2:
+            fitment_vehicle_filter |= Q(
+                fitments__vehicle_make__icontains=vehicle_parts[0],
+                fitments__vehicle_model__icontains=vehicle_parts[1],
+            )
         products = products.filter(
-            vehicle__icontains=str(vehicle).strip(),
-            vehicle_year__isnull=False,
+            Q(vehicle__icontains=vehicle_query)
+            | fitment_vehicle_filter
         )
 
     if vehicle_year:
-        products = products.filter(vehicle_year=vehicle_year)
+        products = products.filter(
+            Q(vehicle_year=vehicle_year)
+            | Q(fitments__year_from__lte=vehicle_year, fitments__year_to__gte=vehicle_year)
+        )
 
     if manufacturer:
         products = products.filter(manufacturer__icontains=str(manufacturer).strip())
@@ -584,6 +601,7 @@ def product_details( request,pk): #PRODUCT DETAIL PAGE IL SIZE UM COLOR SELET CH
             Product.objects
             .select_related("category", "subcategory", "brand", "offer")
             .prefetch_related(
+                "fitments",
                 Prefetch(
                     "variants",
                     queryset=(
@@ -688,6 +706,8 @@ def new_arrivals(request):
 
     products = Product.objects.filter(
         is_active=True
+    ).prefetch_related(
+        "fitments"
     ).order_by(
         "-created_at"
     )[:8]
@@ -1069,12 +1089,27 @@ def catalog_filter_options(request):
         .values_list("vehicle", flat=True)
         .distinct()
     )
+    fitment_vehicles = {
+        f"{make} {model}".strip()
+        for make, model in ProductFitment.objects.filter(product__is_active=True)
+        .values_list("vehicle_make", "vehicle_model")
+    }
+    vehicles = sorted(set(vehicles) | fitment_vehicles)
     vehicle_years = list(
         products
         .exclude(vehicle_year__isnull=True)
         .order_by("vehicle_year")
         .values_list("vehicle_year", flat=True)
         .distinct()
+    )
+    fitment_year_ranges = ProductFitment.objects.filter(product__is_active=True).values_list("year_from", "year_to")
+    vehicle_years = sorted(
+        set(vehicle_years)
+        | {
+            year
+            for year_from, year_to in fitment_year_ranges
+            for year in range(year_from, year_to + 1)
+        }
     )
     manufacturers = list(
         products.exclude(manufacturer="")
@@ -2202,7 +2237,7 @@ def offer_products(request):
 
     products = Product.objects.filter(
         offer=offer
-    )
+    ).prefetch_related("fitments")
 
     serializer = ProductSerializer(
         products,
@@ -2337,6 +2372,24 @@ def search_products(request):
                     subcategory__name__icontains=search
                 )
 
+                |
+
+                Q(
+                    vehicle__icontains=search
+                )
+
+                |
+
+                Q(
+                    fitments__vehicle_make__icontains=search
+                )
+
+                |
+
+                Q(
+                    fitments__vehicle_model__icontains=search
+                )
+
             )
 
         if category:
@@ -2361,13 +2414,27 @@ def search_products(request):
                 products = products.filter(brand__slug=brand.lower(), brand__is_active=True)
 
         if vehicle:
+            vehicle_query = str(vehicle).strip()
+            vehicle_parts = vehicle_query.split(maxsplit=1)
+            fitment_vehicle_filter = (
+                Q(fitments__vehicle_make__icontains=vehicle_query)
+                | Q(fitments__vehicle_model__icontains=vehicle_query)
+            )
+            if len(vehicle_parts) == 2:
+                fitment_vehicle_filter |= Q(
+                    fitments__vehicle_make__icontains=vehicle_parts[0],
+                    fitments__vehicle_model__icontains=vehicle_parts[1],
+                )
             products = products.filter(
-                vehicle__icontains=str(vehicle).strip(),
-                vehicle_year__isnull=False,
+                Q(vehicle__icontains=vehicle_query)
+                | fitment_vehicle_filter
             )
 
         if vehicle_year:
-            products = products.filter(vehicle_year=vehicle_year)
+            products = products.filter(
+                Q(vehicle_year=vehicle_year)
+                | Q(fitments__year_from__lte=vehicle_year, fitments__year_to__gte=vehicle_year)
+            )
 
         if manufacturer:
             products = products.filter(manufacturer__icontains=str(manufacturer).strip())

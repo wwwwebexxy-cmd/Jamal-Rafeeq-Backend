@@ -257,6 +257,41 @@ class Product(models.Model):
         self.emi_starting_price = None
 
 
+class ProductFitment(models.Model):
+    """A vehicle/model and manufacturing-year range supported by a product."""
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="fitments",
+    )
+    vehicle_make = models.CharField(max_length=120)
+    vehicle_model = models.CharField(max_length=160)
+    year_from = models.PositiveIntegerField(
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)]
+    )
+    year_to = models.PositiveIntegerField(
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)]
+    )
+
+    class Meta:
+        ordering = ("vehicle_make", "vehicle_model", "year_from", "id")
+        constraints = (
+            models.UniqueConstraint(
+                fields=("product", "vehicle_make", "vehicle_model", "year_from", "year_to"),
+                name="myapp_product_fitment_unique_range",
+            ),
+        )
+
+    def clean(self):
+        super().clean()
+        if self.year_to < self.year_from:
+            raise ValidationError({"year_to": "The ending year must be on or after the starting year."})
+
+    def __str__(self):
+        return f"{self.vehicle_make} {self.vehicle_model} ({self.year_from}-{self.year_to})"
+
+
 class ProductRelatedProduct(models.Model):
     """An ordered, directed related-product choice made by a merchant."""
 

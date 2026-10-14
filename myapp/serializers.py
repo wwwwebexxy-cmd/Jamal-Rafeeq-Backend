@@ -1158,7 +1158,30 @@ class WishlistSerializer(serializers.ModelSerializer):
 
         return 0
         
+class ProductFitmentSerializer(serializers.ModelSerializer):
+    """Public/admin-safe representation of a product vehicle fitment."""
+
+    class Meta:
+        model = ProductFitment
+        fields = ("id", "vehicle_make", "vehicle_model", "year_from", "year_to")
+        read_only_fields = ("id",)
+
+    def validate(self, attrs):
+        year_from = attrs.get("year_from", getattr(self.instance, "year_from", None))
+        year_to = attrs.get("year_to", getattr(self.instance, "year_to", None))
+        if year_from is not None and year_to is not None and year_to < year_from:
+            raise serializers.ValidationError({"year_to": "The ending year must be on or after the starting year."})
+        for field in ("vehicle_make", "vehicle_model"):
+            if field in attrs:
+                attrs[field] = attrs[field].strip()
+                if not attrs[field]:
+                    raise serializers.ValidationError({field: "This field may not be blank."})
+        return attrs
+
+
 class ProductSerializer(serializers.ModelSerializer):
+
+    fitments = serializers.SerializerMethodField()
 
     category = CategorySerializer(
         read_only=True
@@ -1209,6 +1232,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "vehicle",
             "vehicle_year",
             "manufacturer",
+            "fitments",
             "offer",
             "variants",
             "starting_price",
@@ -1288,6 +1312,9 @@ class ProductSerializer(serializers.ModelSerializer):
                     pass
                 return [feature.strip() for feature in obj.key_features.split('\n') if feature.strip()]
         return []
+
+    def get_fitments(self, obj):
+        return ProductFitmentSerializer(obj.fitments.all(), many=True).data
 
     def get_related_products(self, obj):
         # Kept on the existing product-detail serializer so no parallel
