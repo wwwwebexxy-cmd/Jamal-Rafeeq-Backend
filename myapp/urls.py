@@ -124,45 +124,29 @@ path(
 ]
 
 from rest_framework.routers import DefaultRouter
-from .order_admin_api import SuperAdminOrderDetailView, SuperAdminOrderListView
 from .super_admin_api import (
     AdminAddressViewSet,
     AdminBrandViewSet,
-    AdminCartViewSet,
     AdminCategoryViewSet,
     AdminColorViewSet,
-    AdminCouponUsageViewSet,
-    AdminCouponViewSet,
     AdminHeroBannerViewSet,
-    AdminHeroSideBannerViewSet,
-    AdminHomepageLinkViewSet,
-    AdminOfferViewSet,
-    AdminOrderItemViewSet,
-    AdminOrderViewSet,
     AdminProductImageViewSet,
     AdminProductVariantUnitViewSet,
     AdminProductVariantViewSet,
     AdminProductViewSet,
-    AdminPromoBannerViewSet,
     AdminRegionViewSet,
     AdminSubCategoryViewSet,
-    AdminTrustBenefitViewSet,
     AdminUnitTypeViewSet,
     AdminUnitViewSet,
-    AdminUserProfileViewSet,
     AdminUserViewSet,
-    AdminWishlistViewSet,
     SuperAdminOverviewView,
     SuperAdminSchemaView,
 )
 router = DefaultRouter()
-router.register(r'admin-coupons', views.CouponViewSet, basename='admin-coupon')
-router.register(r'admin-welcome-bonuses', views.WelcomeBonusViewSet, basename='admin-welcome-bonus')
 router.register(r'admin/manage/users', AdminUserViewSet, basename='admin-manage-user')
 router.register(r'admin/manage/brands', AdminBrandViewSet, basename='admin-manage-brand')
 router.register(r'admin/manage/categories', AdminCategoryViewSet, basename='admin-manage-category')
 router.register(r'admin/manage/subcategories', AdminSubCategoryViewSet, basename='admin-manage-subcategory')
-router.register(r'admin/manage/offers', AdminOfferViewSet, basename='admin-manage-offer')
 router.register(r'admin/manage/colors', AdminColorViewSet, basename='admin-manage-color')
 router.register(r'admin/manage/unit-types', AdminUnitTypeViewSet, basename='admin-manage-unit-type')
 router.register(r'admin/manage/units', AdminUnitViewSet, basename='admin-manage-unit')
@@ -171,34 +155,12 @@ router.register(r'admin/manage/products', AdminProductViewSet, basename='admin-m
 router.register(r'admin/manage/product-variants', AdminProductVariantViewSet, basename='admin-manage-product-variant')
 router.register(r'admin/manage/product-variant-units', AdminProductVariantUnitViewSet, basename='admin-manage-product-variant-unit')
 router.register(r'admin/manage/product-images', AdminProductImageViewSet, basename='admin-manage-product-image')
-router.register(r'admin/manage/wishlists', AdminWishlistViewSet, basename='admin-manage-wishlist')
-router.register(r'admin/manage/carts', AdminCartViewSet, basename='admin-manage-cart')
 router.register(r'admin/manage/addresses', AdminAddressViewSet, basename='admin-manage-address')
-router.register(r'admin/manage/user-profiles', AdminUserProfileViewSet, basename='admin-manage-user-profile')
-router.register(r'admin/manage/orders', AdminOrderViewSet, basename='admin-manage-order')
-router.register(r'admin/manage/order-items', AdminOrderItemViewSet, basename='admin-manage-order-item')
 router.register(r'admin/manage/hero-banners', AdminHeroBannerViewSet, basename='admin-manage-hero-banner')
-router.register(r'admin/manage/trust-benefits', AdminTrustBenefitViewSet, basename='admin-manage-trust-benefit')
-router.register(r'admin/manage/promo-banners', AdminPromoBannerViewSet, basename='admin-manage-promo-banner')
-router.register(r'admin/manage/hero-side-banners', AdminHeroSideBannerViewSet, basename='admin-manage-hero-side-banner')
-router.register(r'admin/manage/homepage-links', AdminHomepageLinkViewSet, basename='admin-manage-homepage-link')
-router.register(r'admin/manage/coupons', AdminCouponViewSet, basename='admin-manage-coupon')
-router.register(r'admin/manage/welcome-bonuses', views.WelcomeBonusViewSet, basename='admin-manage-welcome-bonus')
-router.register(r'admin/manage/coupon-usages', AdminCouponUsageViewSet, basename='admin-manage-coupon-usage')
 
 urlpatterns += router.urls
 
 urlpatterns += [
     path("admin/manage/schema/", SuperAdminSchemaView.as_view(), name="super-admin-schema"),
     path("admin/manage/overview/", SuperAdminOverviewView.as_view(), name="super-admin-overview"),
-]
-
-# Strictly protected order-management API for the Support Order Dashboard.
-urlpatterns += [
-    path("orders/", SuperAdminOrderListView.as_view(), name="admin-orders-api"),
-    path(
-        "orders/<int:id>/",
-        SuperAdminOrderDetailView.as_view(),
-        name="admin-order-detail-api",
-    ),
 ]
