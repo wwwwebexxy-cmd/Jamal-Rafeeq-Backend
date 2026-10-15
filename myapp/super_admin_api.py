@@ -29,6 +29,7 @@ from .models import (
     HeroBanner,
     HeroSideBanner,
     HomepageLink,
+    HomepageMedia,
     Offer,
     Order,
     OrderItem,
@@ -809,6 +810,31 @@ class AdminHeroBannerViewSet(AdminModelViewSet):
         return HeroBannerAdminSerializer
 
 
+class AdminHomepageMediaViewSet(AdminModelViewSet):
+    queryset = HomepageMedia.objects.all().order_by("id")
+
+    def _validate_uploads(self):
+        max_bytes = 100 * 1024 * 1024
+        allowed_types = {"video/mp4", "video/webm", "video/ogg", "application/ogg"}
+        allowed_extensions = {".mp4", ".webm", ".ogg"}
+        for uploaded in self.request.FILES.values():
+            filename = str(getattr(uploaded, "name", "")).lower()
+            content_type = str(getattr(uploaded, "content_type", "")).lower()
+            if uploaded.size > max_bytes:
+                raise serializers.ValidationError({"file": "Homepage videos must be 100 MB or smaller."})
+            if content_type not in allowed_types and not any(filename.endswith(extension) for extension in allowed_extensions):
+                raise serializers.ValidationError({"file": "Only MP4, WebM, and OGG videos are accepted."})
+
+    def get_serializer_class(self):
+        class HomepageMediaAdminSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = HomepageMedia
+                fields = "__all__"
+                read_only_fields = ("id", "updated_at")
+
+        return HomepageMediaAdminSerializer
+
+
 class AdminTrustBenefitViewSet(AdminModelViewSet):
     queryset = TrustBenefit.objects.all().order_by("display_order", "id")
     search_fields = ("key", "title", "description")
@@ -936,6 +962,7 @@ ADMIN_RESOURCES = (
     ("product-images", ProductImage, "admin/manage/product-images/"),
     ("addresses", Address, "admin/manage/addresses/"),
     ("hero-banners", HeroBanner, "admin/manage/hero-banners/"),
+    ("homepage-media", HomepageMedia, "admin/manage/homepage-media/"),
 )
 
 # Fields disabled in the dashboard while retaining their database data.

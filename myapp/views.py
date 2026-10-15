@@ -1033,6 +1033,7 @@ def homepage(request):
         )
     )
     recently_viewed = _recently_viewed_products(request)
+    homepage_media = HomepageMedia.objects.order_by("id").first()
 
     return Response(
         {
@@ -1047,6 +1048,10 @@ def homepage(request):
                 many=True,
                 context={"request": request},
             ).data,
+            "homepage_media": HomepageMediaSerializer(
+                homepage_media,
+                context={"request": request},
+            ).data if homepage_media else {},
             "categories": HomeCategorySerializer(
                 categories,
                 many=True,

@@ -1539,6 +1539,14 @@ class HomepageLinkSerializer(serializers.ModelSerializer):
         model = HomepageLink
         fields = "__all__"
 
+
+class HomepageMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomepageMedia
+        fields = "__all__"
+        read_only_fields = ("id", "updated_at")
+
+
 class CouponSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     target_name = serializers.SerializerMethodField(read_only=True)

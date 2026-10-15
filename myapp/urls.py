@@ -130,6 +130,7 @@ from .super_admin_api import (
     AdminCategoryViewSet,
     AdminColorViewSet,
     AdminHeroBannerViewSet,
+    AdminHomepageMediaViewSet,
     AdminProductImageViewSet,
     AdminProductVariantUnitViewSet,
     AdminProductVariantViewSet,
@@ -157,6 +158,7 @@ router.register(r'admin/manage/product-variant-units', AdminProductVariantUnitVi
 router.register(r'admin/manage/product-images', AdminProductImageViewSet, basename='admin-manage-product-image')
 router.register(r'admin/manage/addresses', AdminAddressViewSet, basename='admin-manage-address')
 router.register(r'admin/manage/hero-banners', AdminHeroBannerViewSet, basename='admin-manage-hero-banner')
+router.register(r'admin/manage/homepage-media', AdminHomepageMediaViewSet, basename='admin-manage-homepage-media')
 
 urlpatterns += router.urls
 

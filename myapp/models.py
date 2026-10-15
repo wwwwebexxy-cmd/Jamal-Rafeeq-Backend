@@ -2,6 +2,7 @@ from django.db import models, transaction
 from django.contrib.auth.models import ( AbstractUser, BaseUserManager)
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator
 from django.utils.text import slugify
 
 
@@ -896,6 +897,36 @@ class HomepageLink(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class HomepageMedia(models.Model):
+    """Editable video slots used by the public homepage heritage sections."""
+
+    brand_showcase_video = models.FileField(
+        upload_to="homepage_media/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["mp4", "webm", "ogg"])],
+    )
+    global_reach_portrait_video = models.FileField(
+        upload_to="homepage_media/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["mp4", "webm", "ogg"])],
+    )
+    global_reach_landscape_video = models.FileField(
+        upload_to="homepage_media/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["mp4", "webm", "ogg"])],
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("id",)
+
+    def __str__(self):
+        return "Homepage media"
 
 class Coupon(models.Model):
 
