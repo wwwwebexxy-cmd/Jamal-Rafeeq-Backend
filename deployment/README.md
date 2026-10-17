@@ -18,3 +18,9 @@ credentialed requests. This must include the deployed dashboard origin
 domains. For a same-origin storefront `/api` proxy, keep
 `JWT_COOKIE_SAMESITE=Lax`; only use `None` when the browser calls a genuinely
 cross-site API origin directly.
+
+The current storefront is catalogue-only and sends enquiries to WhatsApp. Set
+`ENABLE_CUSTOMER_COMMERCE=False` in the AWS environment so unused customer
+registration, cart, wishlist, checkout, profile, and order-history routes are
+not exposed. Keep it enabled only for local legacy checkout testing or a
+future checkout rollout.

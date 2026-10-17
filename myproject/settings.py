@@ -29,6 +29,15 @@ SECRET_KEY = (
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 _IS_TESTING = "test" in sys.argv
 
+# The current storefront is a public catalogue with WhatsApp enquiries. Keep
+# the old customer cart/account API available for local compatibility and
+# tests, but do not expose that unused surface in production unless a future
+# checkout rollout explicitly enables it.
+ENABLE_CUSTOMER_COMMERCE = os.getenv(
+    "ENABLE_CUSTOMER_COMMERCE",
+    "true" if (DEBUG or _IS_TESTING) else "false",
+).lower() in ("true", "1", "t")
+
 _allowed_hosts_value = (
     _deployment_allowed_hosts
     or os.getenv("DEPLOYMENT_ALLOWED_HOSTS")

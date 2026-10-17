@@ -15,7 +15,7 @@ urlpatterns = [
     # Django Admin's catch-all /admin/ resolver.
     path( "admin/", admin.site.urls ),
     
-    path("payment/", include("payment.urls")),
+    *([path("payment/", include("payment.urls"))] if settings.ENABLE_CUSTOMER_COMMERCE else []),
 
 ] + static(
     settings.MEDIA_URL,
